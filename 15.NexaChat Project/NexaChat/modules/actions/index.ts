@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { currentUser } from "../auth/actions";
-import { MessageRole, MessageType } from "@/lib/generated/prisma/browser";
+import { MessageRole, MessageType } from "@/lib/generated/prisma/enums";
 import { revalidatePath } from "next/cache";
 
 interface IcreateChatWithMessage {
@@ -10,10 +10,16 @@ interface IcreateChatWithMessage {
   model: string;
 }
 
+interface ApiResponse<T = any> {
+  success: boolean;
+  message?: string;
+  data?: T;
+}
+
 export async function createChatWithMessage({
   content,
   model,
-}: IcreateChatWithMessage) {
+}: IcreateChatWithMessage): Promise<ApiResponse> {
   try {
     const user = await currentUser();
 
@@ -51,7 +57,7 @@ export async function createChatWithMessage({
   }
 }
 
-export async function getAllChats() {
+export async function getAllChats(): Promise<ApiResponse> {
   try {
     const user = await currentUser();
 
@@ -65,9 +71,12 @@ export async function getAllChats() {
       },
       include: { messages: true },
       orderBy: {
-        createdAt: "desc",
+        updatedAt: "desc", // Order by most recently updated
       },
     });
+
+    revalidatePath("/", "page");
+
     return { success: true, data: chats };
   } catch (error) {
     console.error("Error getting all chats:", error);
@@ -75,7 +84,7 @@ export async function getAllChats() {
   }
 }
 
-export async function getChatById(chatId: string) {
+export async function getChatById(chatId: string): Promise<ApiResponse> {
   try {
     const user = await currentUser();
 
@@ -98,7 +107,7 @@ export async function getChatById(chatId: string) {
   }
 }
 
-export async function deleteChat(chatId: string) {
+export async function deleteChat(chatId: string): Promise<ApiResponse> {
   try {
     const user = await currentUser();
 
@@ -117,9 +126,57 @@ export async function deleteChat(chatId: string) {
       return { success: false, message: "Chat not found" };
     }
 
+    revalidatePath("/", "page");
+
     return { success: true, data: chat };
   } catch (error) {
     console.error("Error deleting chat:", error);
     return { success: false, message: "Error deleting chat" };
+  }
+}
+
+export async function renameChat(chatId: string, title: string): Promise<ApiResponse> {
+  try {
+    const user = await currentUser();
+    if (!user) return { success: false, message: "User not found" };
+
+    const chat = await prisma.chat.update({
+      where: { id: chatId, userId: user.id },
+      data: { title: title.trim() },
+    });
+
+    revalidatePath("/", "layout");
+    return { success: true, data: chat };
+  } catch (error) {
+    console.error("Error renaming chat:", error);
+    return { success: false, message: "Error renaming chat" };
+  }
+}
+
+export async function updateUserProfile({
+  name,
+  image,
+}: {
+  name?: string;
+  image?: string;
+}): Promise<ApiResponse> {
+  try {
+    const user = await currentUser();
+    if (!user) return { success: false, message: "User not found" };
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        ...(name && { name: name.trim() }),
+        ...(image !== undefined && { image }),
+      },
+      select: { id: true, name: true, email: true, image: true },
+    });
+
+    revalidatePath("/", "layout");
+    return { success: true, data: updated };
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    return { success: false, message: "Error updating profile" };
   }
 }

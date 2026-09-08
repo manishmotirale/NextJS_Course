@@ -3,20 +3,14 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useGetChatById } from "@/modules/hooks/use-chats";
 import { useAIModels } from "@/modules/hooks/use-ai-models";
 import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import { ArrowUpIcon, SquareIcon, CopyIcon, EditIcon, CheckIcon, XIcon } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
-import {
-  PromptInput,
-  PromptInputBody,
-  PromptInputFooter,
-  PromptInputMessage,
-  PromptInputSubmit,
-  PromptInputTextarea,
-  PromptInputTools,
-} from "@/components/ai-elements/prompt-input";
 import {
   Conversation,
   ConversationContent,
@@ -30,6 +24,9 @@ import {
   Message,
   MessageContent,
   MessageResponse,
+  MessageActions,
+  MessageAction,
+  MessageToolbar,
 } from "@/components/ai-elements/message";
 import {
   Reasoning,
@@ -38,12 +35,12 @@ import {
 } from "@/components/ai-elements/reasoning";
 import { toast } from "sonner";
 
-type DBMessage = {
+interface DBMessage {
   id: string;
   content: string;
-  messageRole: "USER" | "ASSISTANT";
+  messageRole: "USER" | "ASSISTANT" | string;
   createdAt: string | Date;
-};
+}
 
 type MessagePartShape = {
   type: string;
@@ -51,7 +48,7 @@ type MessagePartShape = {
   [key: string]: unknown;
 };
 
-function parseMessageToUI(msg) {
+function parseMessageToUI(msg: DBMessage) {
   const basePart = { type: "text", text: msg.content };
 
   try {
@@ -78,22 +75,137 @@ function MessagePart({
   partIndex,
   role,
   isStreaming,
+  onEdit,
 }: {
   part: MessagePartShape;
   messageId: string;
   partIndex: number;
   role: UIMessage["role"];
   isStreaming: boolean;
+  onEdit?: (messageId: string, newText: string) => void;
 }) {
   const key = `${messageId}-${partIndex}`;
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(part.text || "");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+      // Auto resize
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
+    }
+  }, [isEditing]);
+
+  const handleCopy = async () => {
+    if (part.text) {
+      try {
+        await navigator.clipboard.writeText(part.text);
+        toast.success("Message copied to clipboard");
+      } catch (error) {
+        console.error("Failed to copy:", error);
+        toast.error("Failed to copy message");
+      }
+    }
+  };
+
+  const handleEditStart = () => {
+    setEditText(part.text || "");
+    setIsEditing(true);
+  };
+
+  const handleEditSave = () => {
+    if (editText.trim() && editText !== part.text) {
+      onEdit?.(messageId, editText.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleEditCancel = () => {
+    setEditText(part.text || "");
+    setIsEditing(false);
+  };
 
   if (part.type === "text") {
     return (
-      <Message from={role} key={key}>
-        <MessageContent>
-          <MessageResponse>{part.text}</MessageResponse>
-        </MessageContent>
-      </Message>
+      <div key={key} className="w-full">
+        <Message from={role}>
+          <MessageContent>
+            {isEditing && role === "user" ? (
+              <div className="w-full">
+                <textarea
+                  ref={textareaRef}
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  className="w-full resize-none bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleEditSave();
+                    }
+                    if (e.key === "Escape") {
+                      handleEditCancel();
+                    }
+                  }}
+                  onInput={(e) => {
+                    const target = e.currentTarget;
+                    target.style.height = "auto";
+                    target.style.height = target.scrollHeight + "px";
+                  }}
+                />
+                <div className="flex items-center gap-2 mt-2">
+                  <button
+                    onClick={handleEditSave}
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+                  >
+                    <CheckIcon className="h-3 w-3" />
+                    Resend
+                  </button>
+                  <button
+                    onClick={handleEditCancel}
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-muted text-muted-foreground rounded hover:bg-muted/80 transition-colors"
+                  >
+                    <XIcon className="h-3 w-3" />
+                    Cancel
+                  </button>
+                  <div className="text-[10px] text-muted-foreground ml-2">
+                    <kbd className="px-1.5 py-0.5 rounded bg-muted/50 font-mono">Enter</kbd> to resend · <kbd className="px-1.5 py-0.5 rounded bg-muted/50 font-mono">Esc</kbd> to cancel
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <MessageResponse>{part.text}</MessageResponse>
+            )}
+          </MessageContent>
+        </Message>
+        
+        {/* Action buttons below the message box */}
+        {!isEditing && (
+          <div className="flex justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <MessageActions>
+              <MessageAction
+                onClick={handleCopy}
+                tooltip="Copy message"
+                label="Copy"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <CopyIcon className="h-3.5 w-3.5" />
+              </MessageAction>
+              {role === "user" && !isStreaming && (
+                <MessageAction
+                  onClick={handleEditStart}
+                  tooltip="Edit and resend message"
+                  label="Edit"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <EditIcon className="h-3.5 w-3.5" />
+                </MessageAction>
+              )}
+            </MessageActions>
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -126,8 +238,6 @@ function MessagePart({
 export const MessageViewWithForm = ({ chatId }: { chatId: string }) => {
   const { data: chatData, isPending } = useGetChatById(chatId);
 
-  console.log(chatData);
-
   if (isPending) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -146,7 +256,7 @@ export const MessageViewWithForm = ({ chatId }: { chatId: string }) => {
 
   const rawMessages = chatData.data.messages ?? [];
   const initialMessages: UIMessage[] = rawMessages
-    .filter((m) => m?.id && m?.content?.trim())
+    .filter((m: DBMessage | any) => m?.id && m?.content?.trim())
     .map(parseMessageToUI);
 
   return (
@@ -171,11 +281,24 @@ const ChatView = ({
   const searchParams = useSearchParams();
   const shouldAutoTrigger = searchParams.get("autoTrigger") === "true";
   const hasAutoTriggered = useRef(false);
+  const queryClient = useQueryClient();
 
   const [selectedModel, setSelectedModel] = useState<string | null>(
     initialModel,
   );
   const { data: modelsData, isPending: isModelLoading } = useAIModels();
+
+  // Auto-select first model if no model is selected - more aggressive check
+  useEffect(() => {
+    const models = modelsData?.models;
+    if (models && models.length > 0) {
+      // If no model selected OR empty string, set first model
+      if (!selectedModel || selectedModel === "") {
+        console.log("Setting default model:", models[0].id);
+        setSelectedModel(models[0].id);
+      }
+    }
+  }, [modelsData?.models]); // Remove selectedModel from deps to avoid loop
 
   const transport = useMemo(
     () =>
@@ -185,7 +308,7 @@ const ChatView = ({
     [],
   );
 
-  const { messages, status, sendMessage, regenerate, stop, error } = useChat({
+  const { messages, status, sendMessage, regenerate, stop, error, append } = useChat({
     id: chatId,
     messages: initialMessages,
     transport,
@@ -193,9 +316,39 @@ const ChatView = ({
       console.error("Send message failed:", error);
       toast.error("Failed to send message");
     },
+    onFinish: () => {
+      // Invalidate chats query to refresh sidebar order
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
+    },
   });
 
   const isBuzy = status === "submitted" || status === "streaming";
+
+  const handleEditMessage = async (messageId: string, newText: string) => {
+    try {
+      if (!selectedModel) {
+        toast.error("Please select a model first");
+        return;
+      }
+
+      // Send the edited message as a new message
+      await sendMessage(
+        { text: newText },
+        {
+          body: {
+            chatId,
+            model: selectedModel,
+            skipUserMessage: false,
+          },
+        },
+      );
+      
+      toast.success("Message resent successfully");
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      toast.error("Failed to send message");
+    }
+  };
 
   useEffect(() => {
     if (!shouldAutoTrigger) return;
@@ -233,7 +386,7 @@ const ChatView = ({
     searchParams,
   ]);
 
-  const handleSubmit = async (message: PromptInputMessage) => {
+  const handleSubmit = async (message: { text: string }) => {
     const text = message.text?.trim();
     if (!text) return;
     if (!selectedModel) {
@@ -254,6 +407,11 @@ const ChatView = ({
           },
         },
       );
+      
+      // Force immediate sidebar refresh
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["chats"] });
+      }, 1000);
     } catch (error) {
       console.error("Send message failed:", error);
       toast.error("Failed to send message");
@@ -272,7 +430,7 @@ const ChatView = ({
               />
             ) : (
               messages.map((message) => (
-                <Fragment key={message.id}>
+                <div key={message.id} className="group">
                   {message.parts.map((part, i) => (
                     <MessagePart
                       key={`${message.id}-${i}`}
@@ -285,9 +443,10 @@ const ChatView = ({
                         message === messages.at(-1) &&
                         i === message.parts.length - 1
                       }
+                      onEdit={handleEditMessage}
                     />
                   ))}
-                </Fragment>
+                </div>
               ))
             )}
 
@@ -307,32 +466,126 @@ const ChatView = ({
           <ConversationScrollButton />
         </Conversation>
 
-        <PromptInput onSubmit={handleSubmit} className="mt-4">
-          <PromptInputBody>
-            <PromptInputTextarea
-              placeholder="Type your message..."
-              disabled={isBuzy}
-            />
-          </PromptInputBody>
-
-          <PromptInputFooter>
-            <PromptInputTools className="flex items-center justify-between gap-2 w-full">
-              <div className="flex-1">
-                {isModelLoading ? (
-                  <Spinner />
-                ) : (
-                  <ModelSelector
-                    models={modelsData?.models ?? []}
-                    selectedModelId={selectedModel}
-                    onModelSelect={setSelectedModel}
-                    className=""
-                  />
+        <div className="mt-4 shrink-0">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const text = formData.get("message") as string;
+            if (text?.trim()) {
+              handleSubmit({ text: text.trim() });
+              e.currentTarget.reset();
+            }
+          }}>
+            <div
+              className={cn(
+                "relative rounded-2xl border bg-card shadow-lg transition-all duration-200",
+                "border-border/60 hover:border-border/80",
+                "focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20",
+                isBuzy && "opacity-80"
+              )}
+            >
+              {/* Textarea */}
+              <textarea
+                name="message"
+                placeholder="Continue the conversation... Type your message here"
+                disabled={isBuzy}
+                rows={1}
+                className={cn(
+                  "w-full resize-none bg-transparent px-4 pt-4 pb-2 text-sm leading-relaxed outline-none",
+                  "placeholder:text-muted-foreground/60 min-h-[56px] max-h-[240px]",
+                  "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border/50",
+                  isBuzy && "cursor-not-allowed"
                 )}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    const form = e.currentTarget.form;
+                    if (form) {
+                      const formData = new FormData(form);
+                      const text = formData.get("message") as string;
+                      if (text?.trim()) {
+                        handleSubmit({ text: text.trim() });
+                        form.reset();
+                      }
+                    }
+                  }
+                }}
+                onInput={(e) => {
+                  // Auto-resize textarea
+                  const target = e.currentTarget;
+                  target.style.height = "auto";
+                  target.style.height = Math.min(target.scrollHeight, 240) + "px";
+                }}
+                style={{
+                  fieldSizing: "content"
+                }}
+              />
+
+              {/* Bottom bar */}
+              <div className="flex items-center justify-between gap-3 px-3 pb-3 pt-1 border-t border-border/20">
+                <div className="flex items-center gap-2 min-w-0">
+                  {isModelLoading ? (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Spinner className="h-3 w-3" />
+                      <span>Loading models...</span>
+                    </div>
+                  ) : (
+                    <ModelSelector
+                      models={modelsData?.models ?? []}
+                      selectedModelId={selectedModel ?? ""}
+                      onModelSelect={setSelectedModel}
+                      className=""
+                    />
+                  )}
+                  
+                  {/* Status indicator */}
+                  {status === "streaming" && (
+                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                      <span>Streaming</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {/* Helpful shortcut text */}
+                  {!isBuzy && (
+                    <span className="text-[9px] text-muted-foreground/50 hidden sm:inline">
+                      <kbd className="px-1 py-0.5 rounded bg-muted/40 font-mono">Enter</kbd> to send
+                    </span>
+                  )}
+                  
+                  {/* Send/Stop button */}
+                  {isBuzy ? (
+                    <button
+                      type="button"
+                      onClick={stop}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 bg-destructive text-destructive-foreground hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-destructive/50"
+                      title="Stop generation"
+                    >
+                      <SquareIcon className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={!selectedModel}
+                      className={cn(
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200",
+                        "focus:outline-none focus:ring-2 focus:ring-primary/50",
+                        selectedModel
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-md hover:shadow-lg"
+                          : "bg-muted text-muted-foreground cursor-not-allowed",
+                      )}
+                      title={selectedModel ? "Send message" : "Select a model first"}
+                    >
+                      <ArrowUpIcon className="h-4 w-4 stroke-[2.5]" />
+                    </button>
+                  )}
+                </div>
               </div>
-              <PromptInputSubmit status={status} onStop={stop} />
-            </PromptInputTools>
-          </PromptInputFooter>
-        </PromptInput>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

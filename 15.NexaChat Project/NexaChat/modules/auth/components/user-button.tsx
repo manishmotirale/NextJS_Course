@@ -151,15 +151,13 @@ export default function UserButton({
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          {onProfile && (
-            <DropdownMenuItem
-              onClick={onProfile}
-              className="cursor-pointer text-xs"
-            >
-              <UserIcon className="mr-2 h-3.5 w-3.5" />
-              Profile
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            onClick={onProfile}
+            className="cursor-pointer text-xs"
+          >
+            <UserIcon className="mr-2 h-3.5 w-3.5" />
+            Edit Profile
+          </DropdownMenuItem>
           {onBilling && (
             <DropdownMenuItem
               onClick={onBilling}

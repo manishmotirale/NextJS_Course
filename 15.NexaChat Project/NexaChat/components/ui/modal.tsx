@@ -1,4 +1,4 @@
-import React from "react";
+import React, { ReactNode } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,22 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-const Modal = ({
+interface ModalProps {
+  children: ReactNode;
+  title: string;
+  description?: string;
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit?: () => void | Promise<void>;
+  submitText?: string;
+  cancelText?: string;
+  showFooter?: boolean;
+  submitVariant?: "default" | "destructive" | "outline" | "secondary" | "ghost";
+  size?: string;
+  className?: string;
+}
+
+const Modal: React.FC<ModalProps> = ({
   children,
   title,
   description,

@@ -4,9 +4,27 @@ import {
   deleteChat,
   getAllChats,
   getChatById,
+  renameChat,
 } from "../actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+
+/**
+ * Chat API Response types
+ */
+interface ChatResponse {
+  success: boolean;
+  message?: string;
+  data?: any;
+}
+
+interface CreateChatResponse {
+  success: boolean;
+  data?: {
+    id: string;
+    title?: string;
+  };
+}
 
 export const useGetChats = () => {
   return useQuery({
@@ -36,7 +54,7 @@ export const useCreateChat = () => {
 
   return useMutation({
     mutationFn: createChatWithMessage,
-    onSuccess: async (res: any) => {
+    onSuccess: async (res: CreateChatResponse) => {
       if (res?.success && res?.data) {
         // Await invalidation so React Query fetches the new chat list before page navigation
         await queryClient.invalidateQueries({ queryKey: ["chats"] });
@@ -50,18 +68,32 @@ export const useCreateChat = () => {
   });
 };
 
-export const useDeleteChat = (chatId: string) => {
+export const useDeleteChat = (chatId: string | null) => {
   const queryClient = useQueryClient();
   const router = useRouter();
 
   return useMutation({
-    mutationFn: () => deleteChat(chatId),
+    mutationFn: () => deleteChat(chatId || ""),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["chats"] });
       router.push("/");
     },
     onError: () => {
       toast.error("Error deleting chat");
+    },
+  });
+};
+
+export const useRenameChat = (chatId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ title }: { title: string }) => renameChat(chatId, title),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["chats"] });
+    },
+    onError: () => {
+      toast.error("Error renaming chat");
     },
   });
 };

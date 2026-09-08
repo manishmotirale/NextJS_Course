@@ -56,7 +56,7 @@ export const Context = ({
 
   return (
     <ContextContext.Provider value={contextValue}>
-      <HoverCard closeDelay={0} openDelay={0} {...props} />
+      <HoverCard {...props} />
     </ContextContext.Provider>
   );
 };
@@ -336,7 +336,7 @@ export const ContextReasoningUsage = ({
   ...props
 }: ContextReasoningUsageProps) => {
   const { usage, modelId } = useContextValue();
-  const reasoningTokens = usage?.reasoningTokens ?? 0;
+  const reasoningTokens = (usage as any)?.reasoningTokens ?? 0;
 
   if (children) {
     return children;
@@ -349,7 +349,7 @@ export const ContextReasoningUsage = ({
   const reasoningCost = modelId
     ? getUsage({
         modelId,
-        usage: { reasoningTokens },
+        usage: { reasoningTokens } as any,
       }).costUSD?.totalUSD
     : undefined;
   const reasoningCostText = new Intl.NumberFormat("en-US", {
@@ -376,7 +376,7 @@ export const ContextCacheUsage = ({
   ...props
 }: ContextCacheUsageProps) => {
   const { usage, modelId } = useContextValue();
-  const cacheTokens = usage?.cachedInputTokens ?? 0;
+  const cacheTokens = (usage as any)?.cachedInputTokens ?? 0;
 
   if (children) {
     return children;
@@ -389,7 +389,7 @@ export const ContextCacheUsage = ({
   const cacheCost = modelId
     ? getUsage({
         modelId,
-        usage: { cacheReads: cacheTokens, input: 0, output: 0 },
+        usage: { cacheReads: cacheTokens, input: 0, output: 0 } as any,
       }).costUSD?.totalUSD
     : undefined;
   const cacheCostText = new Intl.NumberFormat("en-US", {

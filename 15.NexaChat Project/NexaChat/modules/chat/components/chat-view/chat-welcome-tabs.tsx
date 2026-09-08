@@ -53,7 +53,15 @@ const CHAT_TAB_MESSAGE = [
   },
 ];
 
-const ChatWelcomeTabs = ({ userName = "Friend", onMessageSelect }: any) => {
+interface ChatWelcomeTabsProps {
+  userName?: string;
+  onMessageSelect: (message: string) => void;
+}
+
+const ChatWelcomeTabs: React.FC<ChatWelcomeTabsProps> = ({
+  userName = "Friend",
+  onMessageSelect,
+}) => {
   const [activeTab, setActiveTab] = useState(0);
   const formattedName = userName.split(" ")[0] || userName;
 

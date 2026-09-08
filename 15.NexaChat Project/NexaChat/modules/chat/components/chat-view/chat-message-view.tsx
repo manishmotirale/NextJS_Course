@@ -4,7 +4,18 @@ import React, { useState } from "react";
 import ChatWelcomeTabs from "./chat-welcome-tabs";
 import ChatMessageForm from "./chat-message-form";
 
-const ChatMessageView = ({ user }: { user: any }) => {
+interface User {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+}
+
+interface ChatMessageViewProps {
+  user: User | null;
+}
+
+const ChatMessageView: React.FC<ChatMessageViewProps> = ({ user }) => {
   const [selectedMessage, setSelectedMessage] = useState("");
 
   const handleMessageSelect = (message: string) => {

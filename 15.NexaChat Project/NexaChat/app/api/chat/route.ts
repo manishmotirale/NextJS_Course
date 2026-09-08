@@ -16,12 +16,22 @@ const openRouter = createOpenRouter({
 });
 
 /**
+ * Database message interface
+ */
+interface DBMessage {
+  id: string;
+  content: string;
+  messageRole: string;
+  createdAt: Date;
+}
+
+/**
  * Convert DB message to UI format for AI SDK
  */
-function dbMessageToUI(msg) {
+function dbMessageToUI(msg: DBMessage) {
   try {
     const parts = JSON.parse(msg.content);
-    const textParts = parts.filter((p) => p.type === "text");
+    const textParts = parts.filter((p: any) => p.type === "text");
 
     if (textParts.length === 0) return null;
 
@@ -31,7 +41,8 @@ function dbMessageToUI(msg) {
       parts: textParts,
       createdAt: msg.createdAt,
     };
-  } catch {
+  } catch (error) {
+    console.error("Error parsing message content:", error);
     return {
       id: msg.id,
       role: msg.messageRole.toLowerCase(),
@@ -46,7 +57,7 @@ const generateMessageId = createIdGenerator({ prefix: "msg", size: 16 });
 /**
  * Convert message parts to JSON string for DB storage
  */
-function partsToJSON(message: { parts?: unknown; content?: string }) {
+function partsToJSON(message: { parts?: unknown; content?: string }): string {
   if (Array.isArray(message.parts)) {
     return JSON.stringify(message.parts);
   }
@@ -83,7 +94,7 @@ export async function POST(req: NextRequest) {
           if (!skipUserMessage) {
             const lastUserMsg = [...messages]
               .reverse()
-              .find((m) => m.role === "user");
+              .find((m: any) => m.role === "user");
             if (lastUserMsg) {
               messageToSave.push({
                 id: lastUserMsg.id,
@@ -112,16 +123,23 @@ export async function POST(req: NextRequest) {
               data: messageToSave,
               skipDuplicates: true,
             });
+
+            // Update chat's updatedAt timestamp to reflect recent activity
+            await prisma.chat.update({
+              where: { id: chatId },
+              data: { updatedAt: new Date() },
+            });
           }
         } catch (error) {
           console.error("Error saving messages", error);
         }
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Chat API error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
     return Response.json(
-      { error: (error as Error).message || "Internal server error" },
+      { error: errorMessage },
       { status: 500 },
     );
   }

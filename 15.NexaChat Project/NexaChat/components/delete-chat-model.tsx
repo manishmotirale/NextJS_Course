@@ -4,7 +4,17 @@ import { useDeleteChat } from "@/modules/hooks/use-chats";
 import React from "react";
 import { toast } from "sonner";
 
-const DeleteChatModel = ({ isModalOpen, setIsModalOpen, chatId }) => {
+interface DeleteChatModelProps {
+  isModalOpen: boolean;
+  setIsModalOpen: (open: boolean) => void;
+  chatId: string | null;
+}
+
+const DeleteChatModel: React.FC<DeleteChatModelProps> = ({
+  isModalOpen,
+  setIsModalOpen,
+  chatId,
+}) => {
   const { mutateAsync, isPending } = useDeleteChat(chatId);
 
   const handleDelete = async () => {
@@ -28,7 +38,7 @@ const DeleteChatModel = ({ isModalOpen, setIsModalOpen, chatId }) => {
       submitText={isPending ? "Deleting..." : "Delete"}
       submitVariant="destructive"
     >
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-muted-foreground">
         Once deleted, all requests and data in this Chat will be permanently
         removed.
       </p>

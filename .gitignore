@@ -1,35 +1,271 @@
-# Dependencies
-node_modules/
-.pnpm-store/
-.yarn/
-
+# ============================================================
 # Next.js
+# ============================================================
+
+# Next.js build output
 .next/
 out/
 
-# Environment variables
+# Next.js cache
+.next/cache/
+
+# ============================================================
+# Node.js
+# ============================================================
+
+# Dependencies
+node_modules/
+
+# npm
+npm-debug.log*
+npm-error.log*
+.npm/
+
+# Yarn
+yarn-debug.log*
+yarn-error.log*
+.yarn/
+.yarn-cache/
+
+# pnpm
+.pnpm-debug.log*
+.pnpm-store/
+
+# Bun
+bun.lockb
+
+# ============================================================
+# Environment Variables
+# ============================================================
+
+# Local environment files
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Build
+# Keep example environment files
+# .env.example
+# .env.template
+
+# ============================================================
+# Production / Build
+# ============================================================
+
 dist/
 build/
+coverage/
 
+# ============================================================
+# TypeScript
+# ============================================================
+
+# TypeScript build information
+*.tsbuildinfo
+
+# ============================================================
+# Vercel
+# ============================================================
+
+.vercel/
+
+# ============================================================
+# Testing
+# ============================================================
+
+# Jest
+coverage/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+
+# ============================================================
+# ESLint
+# ============================================================
+
+.eslintcache
+
+# ============================================================
+# Prettier
+# ============================================================
+
+# Prettier cache
+.prettier-cache
+
+# ============================================================
+# IDE / Editors
+# ============================================================
+
+# Visual Studio Code
+.vscode/
+
+# Keep VS Code extensions/settings if your team wants them
+# !.vscode/extensions.json
+# !.vscode/settings.json
+
+# JetBrains / IntelliJ / WebStorm
+.idea/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+
+# Emacs
+*~
+
+# ============================================================
+# Operating System
+# ============================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+
+# Linux
+.directory
+
+# ============================================================
 # Logs
+# ============================================================
+
 *.log
+logs/
+log/
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 
-# OS
-.DS_Store
-Thumbs.db
+# ============================================================
+# Temporary Files
+# ============================================================
 
-# IDE
-.idea/
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
 
-# Vercel
-.vercel/
+# ============================================================
+# Local Development
+# ============================================================
+
+# Local database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Local uploads
+uploads/
+tmp/
+temp/
+
+# ============================================================
+# Generated Files
+# ============================================================
+
+generated/
+generated-files/
+
+# ============================================================
+# AI / Development Tools
+# ============================================================
+
+# Cursor
+.cursor/
+
+# Windsurf
+.windsurf/
+
+# Claude Code
+.claude/
+
+# GitHub Copilot local files
+.github/copilot/
+
+# ============================================================
+# Package Manager Files - DO NOT IGNORE LOCK FILES
+# ============================================================
+
+# IMPORTANT:
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+#
+# These files SHOULD normally be committed to Git.
+# Do NOT add them to .gitignore.
+
+# ============================================================
+# Secrets / Credentials
+# ============================================================
+
+*.pem
+*.key
+*.crt
+
+# Service account / cloud credentials
+service-account*.json
+credentials*.json
+
+# Firebase
+firebase-debug.log
+.firebaserc.local
+
+# ============================================================
+# Certificates
+# ============================================================
+
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# ============================================================
+# Docker
+# ============================================================
+
+.dockerignore
+
+# ============================================================
+# Miscellaneous
+# ============================================================
+
+*.orig
+*.rej
+
+# OS generated files
+Icon?
+._*
+
+# Local configuration
+.local/
+
+# ============================================================
+# IMPORTANT FILES TO KEEP TRACKED
+# ============================================================
+
+# Environment examples should remain in Git
+!.env.example
+!.env.template
+
+# GitHub workflows should remain tracked
+!.github/
+!.github/workflows/

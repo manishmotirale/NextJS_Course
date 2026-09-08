@@ -21,27 +21,46 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
+interface AIModel {
+  id: string;
+  name: string;
+  description?: string;
+  context_length?: number;
+  pricing?: {
+    prompt?: string | number;
+    completion?: string | number;
+    request?: string | number;
+  };
+}
+
+interface ModelSelectorProps {
+  models?: AIModel[];
+  selectedModelId: string;
+  onModelSelect: (modelId: string) => void;
+  className?: string;
+}
+
 export function ModelSelector({
   models = [],
   selectedModelId,
   onModelSelect,
   className,
-}: any) {
+}: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [selectedForDetails, setSelectedForDetails] = useState<any>(null);
+  const [selectedForDetails, setSelectedForDetails] = useState<AIModel | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const selectedModel = models.find((m: any) => m.id === selectedModelId);
+  const selectedModel = models.find((m) => m.id === selectedModelId);
 
-  const formatContextLength = (length: number) => {
+  const formatContextLength = (length: number | undefined): string => {
     if (!length) return "N/A";
     if (length >= 1000000) return `${(length / 1000000).toFixed(1)}M`;
     if (length >= 1000) return `${(length / 1000).toFixed(0)}K`;
     return length.toString();
   };
 
-  const isFreeModel = (model: any) => {
+  const isFreeModel = (model: AIModel): boolean => {
     return (
       model?.pricing?.prompt === "0" &&
       model?.pricing?.completion === "0" &&
@@ -49,13 +68,13 @@ export function ModelSelector({
     );
   };
 
-  const openModelDetails = (model: any, e: React.MouseEvent) => {
+  const openModelDetails = (model: AIModel, e: React.MouseEvent): void => {
     e.stopPropagation();
     setSelectedForDetails(model);
     setDetailsOpen(true);
   };
 
-  const filteredModels = models.filter((model: any) => {
+  const filteredModels = models.filter((model) => {
     const query = searchQuery.toLowerCase();
     return (
       model.name?.toLowerCase().includes(query) ||
@@ -102,7 +121,7 @@ export function ModelSelector({
                   No matching models found
                 </div>
               ) : (
-                filteredModels.map((model: any) => (
+                filteredModels.map((model) => (
                   <div
                     key={model.id}
                     className={cn(

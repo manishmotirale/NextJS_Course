@@ -94,9 +94,9 @@ Real-World Projects 🚀
 | 11 | 🔐 Authentication and Authorization | `clerk-auth`, `better-auth` |
 | 12 | 💳 Payment and Billing | `stripe-integration`, `polar-intergration`, `razorpay-integration` |
 | 13 | ⚡ Cache and Revalidation | `module-13` |
-| 14 | 🧩 Leetcode Clone | `leetcode` |
-| 15 | 💬 T3 Clone | `t3-chat` |
-| 16 | ✨ V0 Clone | `gen-v` |
+| 14 | 🧩 AlgoArena Project | `algo-arena` |
+| 15 | 💬 NexaChat Project | `nexa-chat` |
+| 16 | ✨ Gen-V Project | `gen-v` |
 | 17 | 🟢 Supabase MasterClass | `story-mint` |
 | 18 | 🔥 Convex MasterClass | `karya` |
 
